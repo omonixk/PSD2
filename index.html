@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Progressive Self-Development</title>
+<title>Progressive Self‑Development</title>
 <style>
   :root{
     --bg:#f6f7fb; --card:#ffffff; --ink:#0f1220;
@@ -45,31 +45,18 @@
   .hr{height:1px;background:var(--border);margin:10px 0}
   .right{margin-left:auto}
   .wrap{display:flex;gap:12px;flex-wrap:wrap}
-  /* วงกลมรวม */
-  .circle-wrapper{display:flex;justify-content:center;align-items:center;margin-bottom:20px;}
-  svg{transform:rotate(-90deg);}
-  .circle-text{position:absolute;font-size:20px;font-weight:600;}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>Progressive Self-Development</h1>
+    <h1>Progressive Self‑Development</h1>
     <div class="wrap">
       <button class="btn" id="addTopicBtn">เพิ่มหัวข้อ</button>
       <button class="btn secondary" id="exportAllBtn">ส่งออกข้อมูลทั้งหมด</button>
       <span class="pill" id="statusPill">v1 • Local</span>
     </div>
   </header>
-
-  <!-- วงกลมรวม -->
-  <div class="circle-wrapper" style="position:relative;">
-    <svg width="100" height="100">
-      <circle cx="50" cy="50" r="45" stroke="#e5e7eb" stroke-width="10" fill="none"/>
-      <circle id="progressCircle" cx="50" cy="50" r="45" stroke="#2563eb" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="282.743" stroke-dashoffset="282.743"/>
-    </svg>
-    <div class="circle-text" id="circleText">0%</div>
-  </div>
 
   <section id="homeView" class="grid">
     <div class="card">
@@ -104,7 +91,7 @@
           </div>
           <div class="spacer"></div>
           <div>
-            <label>ตัวอย่างหลอด</label>
+            <label>ตัวอย่างหลอด (อิงค่าปัจจุบัน + การเปลี่ยนแปลงที่ยังไม่บันทึก)</label>
             <div class="bar" id="previewBar"><span style="width:0%"></span><div class="ticks" id="previewTicks"></div></div>
             <div class="small" id="previewMeta"></div>
             <div class="seg-indicator" id="segIndicator"></div>
@@ -119,9 +106,10 @@
           <div id="questsList" class="grid" style="margin-top:8px"></div>
           <div class="hr"></div>
           <div class="row">
-            <button class="btn success" id="applyStageBtn">Save</button>
-            <button class="btn ghost" id="discardStageBtn">ยกเลิก</button>
+            <button class="btn success" id="applyStageBtn">Save (บันทึกการเปลี่ยนแปลง)</button>
+            <button class="btn ghost" id="discardStageBtn">ยกเลิกการเปลี่ยนแปลง</button>
           </div>
+          <div class="small">หมายเหตุ: ปุ่มเขียว/แดงจะ “เตรียมการเปลี่ยนแปลง” ไว้ก่อน จนกด Save จึงบันทึกจริง</div>
         </div>
 
         <div class="card">
@@ -159,20 +147,8 @@ function compute(t){ const total=(t.transactions||[]).reduce((s,x)=>s+Number(x.d
 function formatNumber(n){ return (Math.round(n*100)/100).toString(); }
 function download(filename,text){ const a=document.createElement('a'); const blob=new Blob([text],{type:'text/plain'}); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1e3); }
 
-function updateCircle(){
-  const circle=document.getElementById('progressCircle');
-  const text=document.getElementById('circleText');
-  if(!db.topics.length){circle.style.strokeDashoffset=282.743;text.textContent='0%';return;}
-  let totalPercent=0; db.topics.forEach(t=>{ totalPercent+=compute(t).percent; });
-  totalPercent=totalPercent/db.topics.length;
-  const offset=282.743 - (282.743*(totalPercent/100));
-  circle.style.strokeDashoffset=Math.max(0,offset);
-  text.textContent=Math.round(totalPercent)+'%';
-}
-
 const homeView=document.getElementById('homeView'); const topicView=document.getElementById('topicView'); const topicsList=document.getElementById('topicsList');
-function renderHome(){ homeView.style.display='grid'; topicView.style.display='none'; topicsList.innerHTML=''; if(!db.topics.length){ const empty=document.createElement('div'); empty.className='card'; empty.innerHTML='<div class="small">ยังไม่มีหัวข้อ</div>'; topicsList.appendChild(empty); updateCircle(); return; }
-db.topics.forEach(t=>{ ensureTopic(t); const {total,stats,percent}=compute(t); const card=document.createElement('div'); card.className='card topic'; card.innerHTML=`
+function renderHome(){ homeView.style.display='grid'; topicView.style.display='none'; topicsList.innerHTML=''; if(!db.topics.length){ const empty=document.createElement('div'); empty.className='card'; empty.innerHTML='<div class="small">ยังไม่มีหัวข้อ กด “เพิ่มหัวข้อ” ด้านบน</div>'; topicsList.appendChild(empty); return; } db.topics.forEach(t=>{ ensureTopic(t); const {total,stats,percent}=compute(t); const card=document.createElement('div'); card.className='card topic'; card.innerHTML=`
   <div class="topic-name">${t.name}</div>
   <div class="bar ${percent>100?'overflow':''}" style="flex:1">
     <span style="width:${Math.min(percent,200)}%"></span>
@@ -181,10 +157,9 @@ db.topics.forEach(t=>{ ensureTopic(t); const {total,stats,percent}=compute(t); c
   <div class="small" style="width:120px;text-align:right">${formatNumber(total)}/${t.settings.maxPoints} pts • ${stats} stat</div>`;
   const ticks=card.querySelector('.ticks'); const segs=Number(t.settings.segments||0); for(let i=1;i<segs;i++){ const tk=document.createElement('div'); tk.className='tick'; tk.style.left=(i*100/segs)+'%'; ticks.appendChild(tk); }
   card.addEventListener('click',()=>openTopic(t.id)); topicsList.appendChild(card);
-});
-updateCircle();}
+});}
 
-document.getElementById('addTopicBtn').addEventListener('click',()=>{ const name=prompt('ตั้งชื่อหัวข้อ'); if(!name)return; db.topics.push(ensureTopic({id:uid(),name,settings:{maxPoints:100,segments:5,pointsPerStat:10},transactions:[],quests:[]})); saveDB(db); renderHome(); });
+document.getElementById('addTopicBtn').addEventListener('click',()=>{ const name=prompt('ตั้งชื่อหัวข้อใหม่ เช่น "Emotional Regulation"'); if(!name)return; db.topics.push(ensureTopic({id:uid(),name,settings:{maxPoints:100,segments:5,pointsPerStat:10},transactions:[],quests:[{id:uid(),title:'งานสำเร็จเล็ก',points:5},{id:uid(),title:'งานสำเร็จใหญ่',points:10}],})); saveDB(db); renderHome(); });
 document.getElementById('exportAllBtn').addEventListener('click',()=>download('progress_backup.json', JSON.stringify(db,null,2)));
 
 const backBtn=document.getElementById('backBtn'); const topicTitle=document.getElementById('topicTitle'); const liveStats=document.getElementById('liveStats'); const inpMaxPoints=document.getElementById('inpMaxPoints'); const inpSegments=document.getElementById('inpSegments'); const inpPointsPerStat=document.getElementById('inpPointsPerStat'); const previewBar=document.getElementById('previewBar'); const previewTicks=document.getElementById('previewTicks'); const previewMeta=document.getElementById('previewMeta'); const segIndicator=document.getElementById('segIndicator'); const questsList=document.getElementById('questsList'); const historyTableBody=document.querySelector('#historyTable tbody');
@@ -195,22 +170,34 @@ function openTopic(id){ currentTopicId=id; homeView.style.display='none'; topicV
   renderPreview(); renderQuests(); renderHistory();
 }
 
-function renderPreview(){ const t=ensureTopic(findTopic(currentTopicId)); const s=stage.settings||t.settings; const base=compute(t); const totalWithStage=base.total+stage.deltaPoints; const percent=s.maxPoints?(totalWithStage/s.maxPoints)*100:0; previewBar.className='bar'+(percent>100?' overflow':''); previewBar.querySelector('span').style.width=Math.min(percent,200)+'%'; previewTicks.innerHTML=''; for(let i=1;i<Number(s.segments||0);i++){ const tk=document.createElement('div'); tk.className='tick'; tk.style.left=(i*100/Number(s.segments))+'%'; previewTicks.appendChild(tk); } segIndicator.innerHTML=''; const stats=Math.floor(totalWithStage/Number(s.pointsPerStat||10)); for(let i=0;i<Number(s.segments||0);i++){ const seg=document.createElement('div'); seg.className='seg'+(i<stats?' filled':''); segIndicator.appendChild(seg); } liveStats.textContent=`รวม ${formatNumber(base.total)} pts • ${base.stats} stat`; previewMeta.textContent=`หลังบันทึก: ${formatNumber(totalWithStage)} pts (${formatNumber(percent)}%) • ${stats} stat`; }
+function renderPreview(){ const t=ensureTopic(findTopic(currentTopicId)); const s=stage.settings||t.settings; const base=compute(t); const totalWithStage=base.total+stage.deltaPoints; const percent=s.maxPoints?(totalWithStage/s.maxPoints)*100:0; previewBar.className='bar'+(percent>100?' overflow':''); previewBar.querySelector('span').style.width=Math.min(percent,200)+'%'; previewTicks.innerHTML=''; for(let i=1;i<Number(s.segments||0);i++){ const tk=document.createElement('div'); tk.className='tick'; tk.style.left=(i*100/Number(s.segments))+'%'; previewTicks.appendChild(tk); } segIndicator.innerHTML=''; const stats=Math.floor(totalWithStage/Number(s.pointsPerStat||10)); for(let i=0;i<Number(s.segments||0);i++){ const seg=document.createElement('div'); seg.className='seg'+(i<stats?' filled':''); segIndicator.appendChild(seg); } liveStats.textContent=`รวม ${formatNumber(base.total)} pts • ${base.stats} stat`; previewMeta.textContent=`หลังบันทึก: ${formatNumber(totalWithStage)} pts (${formatNumber(percent)}%) • ${stats} stat • เปลี่ยนแปลงค้างไว้ ${stage.deltaPoints>=0?'+':''}${stage.deltaPoints} pts`; }
 
 function renderQuests(){ const t=ensureTopic(findTopic(currentTopicId)); questsList.innerHTML=''; if(!t.quests.length){ const empty=document.createElement('div'); empty.className='small'; empty.textContent='ยังไม่มีเควส'; questsList.appendChild(empty); } t.quests.forEach(q=>{ const row=document.createElement('div'); row.className='row'; row.style.alignItems='center'; row.innerHTML=`
-  <div style="flex:1"><div style="font-weight:600">${q.title}</div><div class="small">${q.points>0?'+':''}${q.points} pts</div></div>
+  <div style="flex:1"><div style="font-weight:600">${q.title}</div><div class="small">${q.points>0?'+':''}${q.points} pts ต่อครั้ง</div></div>
   <div class="wrap">
-    <button class="btn success">เขียว +</button>
-    <button class="btn danger">แดง −</button>
-    <button class="btn secondary">แก้ไข</button>
-    <button class="btn ghost">ลบ</button>
+    <button class="btn success" title="ทำสำเร็จ (+${q.points})">เขียว +</button>
+    <button class="btn danger" title="ไม่สำเร็จ (-${q.points})">แดง −</button>
+    <button class="btn secondary" title="แก้ไข">แก้ไข</button>
+    <button class="btn ghost" title="ลบ">ลบ</button>
   </div>`;
   const [btnGreen,btnRed,btnEdit,btnDel]=row.querySelectorAll('button');
   btnGreen.addEventListener('click',()=>{ stage.deltaPoints+=Number(q.points); stage.notes.push(`✔ ${q.title} +${q.points}`); renderPreview(); });
   btnRed.addEventListener('click',()=>{ stage.deltaPoints-=Number(q.points); stage.notes.push(`✖ ${q.title} -${q.points}`); renderPreview(); });
-  btnEdit.addEventListener('click',()=>{ const title=prompt('แก้ชื่อเควส',q.title); if(title===null)return; let pts=prompt('แก้คะแนน',q.points); if(pts===null)return; pts=Number(pts); if(!Number.isFinite(pts)) return alert('ตัวเลขเท่านั้น'); q.title=title.trim()||q.title; q.points=pts; saveDB(db); renderQuests(); });
+  btnEdit.addEventListener('click',()=>{ const title=prompt('แก้ชื่อเควส',q.title); if(title===null)return; let pts=prompt('แก้จำนวนคะแนน (+/- ได้)',q.points); if(pts===null)return; pts=Number(pts); if(!Number.isFinite(pts)) return alert('กรุณาใส่ตัวเลข'); q.title=title.trim()||q.title; q.points=pts; saveDB(db); renderQuests(); });
   btnDel.addEventListener('click',()=>{ if(!confirm('ลบเควสนี้?'))return; t.quests=t.quests.filter(x=>x.id!==q.id); saveDB(db); renderQuests(); });
   questsList.appendChild(row);
 }); }
 
-document.getElementById('addQuestBtn').addEventListener('click',()=>{ const t=ensureTopic(findTopic(currentTopicId)); const title=prompt('ชื่อเควส'); if
+document.getElementById('addQuestBtn').addEventListener('click',()=>{ const t=ensureTopic(findTopic(currentTopicId)); const title=prompt('ชื่อเควส'); if(!title)return; let pts=prompt('คะแนนของเควส (เช่น 5 หรือ 10; ใส่ค่าติดลบได้)'); if(pts===null)return; pts=Number(pts); if(!Number.isFinite(pts)) return alert('กรุณาใส่ตัวเลข'); t.quests.push({id:uid(),title:title.trim(),points:pts}); saveDB(db); renderQuests(); });
+document.getElementById('applyStageBtn').addEventListener('click',()=>{ const t=ensureTopic(findTopic(currentTopicId)); if(stage.settings){ t.settings={...t.settings,...stage.settings}; } if(stage.deltaPoints!==0){ t.transactions.push({time:nowISO(),note:stage.notes.join(' | ')||'ปรับแต้ม',delta:stage.deltaPoints}); } saveDB(db); stage={settings:null,deltaPoints:0,notes:[]}; renderPreview(); renderHistory(); alert('บันทึกแล้ว'); });
+document.getElementById('discardStageBtn').addEventListener('click',()=>{ stage={settings:null,deltaPoints:0,notes:[]}; const t=ensureTopic(findTopic(currentTopicId)); inpMaxPoints.value=t.settings.maxPoints; inpSegments.value=t.settings.segments; inpPointsPerStat.value=t.settings.pointsPerStat; renderPreview(); });
+document.getElementById('deleteTopicBtn').addEventListener('click',()=>{ if(!confirm('ลบหัวข้อนี้และข้อมูลทั้งหมด?'))return; db.topics=db.topics.filter(t=>t.id!==currentTopicId); saveDB(db); currentTopicId=null; renderHome(); });
+
+function renderHistory(){ const t=ensureTopic(findTopic(currentTopicId)); historyTableBody.innerHTML=''; const rows=(t.transactions||[]).slice().reverse(); for(const row of rows){ const tr=document.createElement('tr'); const date=new Date(row.time); tr.innerHTML=`<td>${date.toLocaleString()}</td><td>${row.note||''}</td><td>${row.delta>0?'+':''}${row.delta}</td>`; historyTableBody.appendChild(tr);} }
+document.getElementById('exportCsvBtn').addEventListener('click',()=>{ const t=ensureTopic(findTopic(currentTopicId)); const rows=[['time','note','delta']]; for(const r of (t.transactions||[])){ rows.push([r.time,r.note||'',r.delta]); } const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); download(`${t.name.replace(/\s+/g,'_')}_history.csv`, csv); });
+
+renderHome();
+</script>
+</body>
+</html>
+</html>
