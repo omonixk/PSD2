@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Progressive Self‑Development</title>
 <style>
   :root{
@@ -13,7 +13,7 @@
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .container{max-width:960px;margin:0 auto;padding:16px}
+  .container{max-width:980px;margin:0 auto;padding:16px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
   h1{font-size:20px;margin:0}
   .btn{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:var(--accent);color:#fff}
@@ -26,7 +26,7 @@
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   input[type="text"],input[type="number"],textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
   .topic{display:flex;gap:12px;align-items:center}
-  .topic-name{flex:0 0 210px;font-weight:600}
+  .topic-name{flex:0 0 240px;font-weight:600}
   .bar{position:relative;height:16px;background:#f1f5f9;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
   .bar > span{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#60a5fa,#2563eb)}
   .bar.overflow > span{background:repeating-linear-gradient(45deg,#60a5fa,#60a5fa 10px,#2563eb 10px,#2563eb 20px)}
@@ -45,14 +45,13 @@
   .hr{height:1px;background:var(--border);margin:10px 0}
   .right{margin-left:auto}
   .wrap{display:flex;gap:12px;flex-wrap:wrap}
-
   /* วงกลมรวมเปอร์เซ็นต์เฉลี่ย */
   .circle-wrapper{display:flex;justify-content:center;align-items:center;margin-bottom:10px;position:relative}
   svg{transform:rotate(-90deg)}
   .circle-text{position:absolute;font-size:18px;font-weight:700}
-
   /* เรดาร์ */
-  #radarCard canvas{background:#fff;border:1px solid var(--border);border-radius:12px}
+  #radarCard canvas, #topicRadarCard canvas{background:#fff;border:1px solid var(--border);border-radius:12px}
+  .heading{font-weight:700;margin:6px 0}
 </style>
 </head>
 <body>
@@ -60,13 +59,13 @@
   <header>
     <h1>Progressive Self‑Development</h1>
     <div class="wrap">
-      <button class="btn" id="addTopicBtn">เพิ่มหัวข้อ</button>
+      <button class="btn" id="addTopicBtn">เพิ่มหัวข้อหลัก</button>
       <button class="btn secondary" id="exportAllBtn">ส่งออกข้อมูลทั้งหมด</button>
-      <span class="pill" id="statusPill">v1 • Local</span>
+      <span class="pill" id="statusPill">v2 • Local</span>
     </div>
   </header>
 
-  <!-- วงกลมรวมเปอร์เซ็นต์เฉลี่ยทุกหัวข้อ -->
+  <!-- วงกลมรวมเปอร์เซ็นต์เฉลี่ยทุกหัวข้อหลัก -->
   <div class="circle-wrapper">
     <svg width="100" height="100">
       <circle cx="50" cy="50" r="45" stroke="#e5e7eb" stroke-width="10" fill="none"/>
@@ -76,30 +75,59 @@
     <div class="circle-text" id="circleText">0%</div>
   </div>
 
-  <!-- เรดาร์สรุปภาพรวม -->
+  <!-- เรดาร์สรุปหัวข้อหลักบนหน้าแรก -->
   <div class="card" id="radarCard" style="overflow:hidden">
     <div class="small" style="margin-bottom:6px">
-      สรุปภาพรวม: เรดาร์จะเปลี่ยนจำนวนเหลี่ยมตามจำนวนหัวข้อ (ค่าจากหลอดแต่ละหัวข้อ แคปที่ 100% เพื่ออ่านง่าย)
+      สรุปภาพรวมหน้าแรก: รูปหลายเหลี่ยมจะเปลี่ยนตามจำนวนหัวข้อหลัก (ค่าคือ % เฉลี่ยจากหัวข้อย่อยของแต่ละหัวข้อหลัก)
     </div>
-    <canvas id="radarCanvas" width="420" height="320"
-            style="width:100%;max-width:700px;display:block;margin:auto"></canvas>
+    <canvas id="radarCanvas" width="420" height="320" style="width:100%;max-width:700px;display:block;margin:auto"></canvas>
   </div>
 
   <!-- Home -->
   <section id="homeView" class="grid">
     <div class="card">
-      <div class="small">หน้าแรก • แตะหัวข้อเพื่อเข้าไปตั้งค่า/ทำเควส • บาร์ลายเฉียง = แต้มเกินค่าเป้าหมาย</div>
+      <div class="small">หน้าแรก • แตะหัวข้อหลักเพื่อเข้าไปเพิ่ม/จัดการหัวข้อย่อย • บาร์ของหัวข้อหลัก = ค่าเฉลี่ยเปอร์เซ็นต์ของหัวข้อย่อยทั้งหมด</div>
     </div>
     <div id="topicsList" class="grid"></div>
   </section>
 
-  <!-- Topic detail -->
-  <section id="topicView" class="grid" style="display:none">
+  <!-- Main Topic (หัวข้อหลัก) -->
+  <section id="mainView" class="grid" style="display:none">
     <div class="card">
       <div class="row" style="align-items:center">
-        <button class="btn ghost" id="backBtn">← กลับหน้าแรก</button>
-        <h2 id="topicTitle" style="margin:0"></h2>
-        <span class="right small" id="liveStats"></span>
+        <button class="btn ghost" id="backHomeBtn">← กลับหน้าแรก</button>
+        <h2 id="mainTitle" style="margin:0"></h2>
+        <span class="right small" id="mainSummary"></span>
+      </div>
+    </div>
+
+    <div class="card" id="topicRadarCard" style="overflow:hidden">
+      <div class="small" style="margin-bottom:6px">
+        เรดาร์หัวข้อย่อยของหัวข้อหลักนี้ (ค่าคือ % ของแต่ละหัวข้อย่อย)
+      </div>
+      <canvas id="topicRadarCanvas" width="420" height="300" style="width:100%;max-width:700px;display:block;margin:auto"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <div class="heading">หัวข้อย่อย</div>
+        <button class="btn secondary right" id="addSubBtn">เพิ่มหัวข้อย่อย</button>
+      </div>
+      <div id="subsList" class="grid" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card small">
+      คำแนะนำ: แตะหัวข้อย่อยเพื่อเข้าไปทำเควส/ตั้งค่า หัวข้อหลักจะคำนวณค่าเป็น “ค่าเฉลี่ยเปอร์เซ็นต์ของหัวข้อย่อยทั้งหมด”
+    </div>
+  </section>
+
+  <!-- Sub Topic (หัวข้อย่อย + quests) -->
+  <section id="subView" class="grid" style="display:none">
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <button class="btn ghost" id="backMainBtn">← กลับหัวข้อหลัก</button>
+        <h2 id="subTitle" style="margin:0"></h2>
+        <span class="right small" id="subLive"></span>
       </div>
       <div class="spacer"></div>
       <div class="grid">
@@ -107,26 +135,26 @@
           <div class="row">
             <div style="flex:1">
               <label>Max points</label>
-              <input type="number" id="inpMaxPoints" min="1" step="1">
+              <input type="number" id="subMaxPoints" min="1" step="1">
             </div>
             <div style="flex:1">
               <label>จำนวนช่อง (segments)</label>
-              <input type="number" id="inpSegments" min="0" step="1">
+              <input type="number" id="subSegments" min="0" step="1">
             </div>
             <div style="flex:1">
               <label>1 stat = กี่ points</label>
-              <input type="number" id="inpPointsPerStat" min="1" step="1">
+              <input type="number" id="subPointsPerStat" min="1" step="1">
             </div>
           </div>
           <div class="spacer"></div>
           <div>
             <label>ตัวอย่างหลอด (อิงค่าปัจจุบัน + การเปลี่ยนแปลงที่ยังไม่บันทึก)</label>
-            <div class="bar" id="previewBar">
+            <div class="bar" id="subPreviewBar">
               <span style="width:0%"></span>
-              <div class="ticks" id="previewTicks"></div>
+              <div class="ticks" id="subPreviewTicks"></div>
             </div>
-            <div class="small" id="previewMeta"></div>
-            <div class="seg-indicator" id="segIndicator"></div>
+            <div class="small" id="subPreviewMeta"></div>
+            <div class="seg-indicator" id="subSegIndicator"></div>
           </div>
         </div>
 
@@ -156,7 +184,7 @@
         </div>
 
         <div class="card">
-          <button class="btn danger" id="deleteTopicBtn">ลบหัวข้อนี้</button>
+          <button class="btn danger" id="deleteSubBtn">ลบหัวข้อย่อยนี้</button>
         </div>
       </div>
     </div>
@@ -164,291 +192,344 @@
 </div>
 
 <script>
-/* ---------- Storage & Model ---------- */
-const DB_KEY = 'psd_v1';
+/* --------------------- Storage & Model --------------------- */
+const DB_KEY = 'psd_v2_nested';
 function nowISO(){ return new Date().toISOString(); }
-function uid(){ return 't' + Math.random().toString(36).slice(2,9); }
-function loadDB(){ try{ const raw=localStorage.getItem(DB_KEY); return raw?JSON.parse(raw):{version:1,topics:[]}; }catch(e){ return {version:1,topics:[]}; } }
+function uid(){ return 'id' + Math.random().toString(36).slice(2,10); }
+function loadDB(){ try{ const raw=localStorage.getItem(DB_KEY); return raw?JSON.parse(raw):{version:2,topics:[]}; }catch(e){ return {version:2,topics:[]}; } }
 function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
 let db = loadDB();
-let currentTopicId = null;
-let stage = { settings:null, deltaPoints:0, notes:[] };
 
-function ensureTopic(t){
-  t.settings = t.settings || {};
-  t.settings.maxPoints     = Math.max(1, Number(t.settings.maxPoints||100));
-  t.settings.segments      = Math.max(0, Number(t.settings.segments||0));
-  t.settings.pointsPerStat = Math.max(1, Number(t.settings.pointsPerStat||10));
-  t.transactions ||= [];
-  t.quests ||= [];
+function ensureMain(t){
+  t.subs ||= []; // array of sub topics
   return t;
 }
-function findTopic(id){ return db.topics.find(t=>t.id===id); }
-function compute(t){
-  const total = (t.transactions||[]).reduce((s,x)=>s + Number(x.delta||0), 0);
-  const mp    = Number(t.settings.maxPoints);
-  const pps   = Number(t.settings.pointsPerStat);
-  const stats = Math.floor(total / pps);
-  const percent = mp ? (total/mp)*100 : 0;   // อนุญาตเกิน 100
+function ensureSub(s){
+  s.settings ||= {};
+  s.settings.maxPoints     = Math.max(1, Number(s.settings.maxPoints||100));
+  s.settings.segments      = Math.max(0, Number(s.settings.segments||0));
+  s.settings.pointsPerStat = Math.max(1, Number(s.settings.pointsPerStat||10));
+  s.transactions ||= [];
+  s.quests ||= [];
+  return s;
+}
+
+/* ---------------------- Compute helpers -------------------- */
+// ค่าของหัวข้อย่อย (เหมือนเดิม)
+function computeSub(sub){
+  const total=(sub.transactions||[]).reduce((a,b)=>a + Number(b.delta||0),0);
+  const mp=Number(sub.settings.maxPoints);
+  const pps=Number(sub.settings.pointsPerStat);
+  const stats=Math.floor(total/pps);
+  const percent = mp ? (total/mp)*100 : 0;  // อนุญาตเกิน 100 ที่หลอด แต่เรดาร์จะ cap 100
   return { total, stats, percent };
 }
+// ค่าแสดงผลของหัวข้อหลัก = ค่าเฉลี่ยเปอร์เซ็นต์ของหัวข้อย่อยทั้งหมด
+function computeMainPercent(main){
+  const subs = (main.subs||[]).map(ensureSub);
+  if(!subs.length) return 0;
+  const sum = subs.reduce((s,sub)=>s + computeSub(sub).percent, 0);
+  return sum / subs.length; // อาจเกิน 100 หากย่อยเกิน แต่เรดาร์หน้าแรกจะ cap 100
+}
+
+/* ---------------------- UI: Global pieces ------------------ */
 function formatNumber(n){ return (Math.round(n*100)/100).toString(); }
 function download(filename, text){
   const a=document.createElement('a');
-  const blob=new Blob([text], {type:'text/plain'});
-  a.href=URL.createObjectURL(blob);
-  a.download=filename;
-  document.body.appendChild(a);
-  a.click(); a.remove();
+  a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+  a.download=filename; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-/* ---------- วงกลมเปอร์เซ็นต์เฉลี่ย ---------- */
+/* --------- วงกลมเปอร์เซ็นต์เฉลี่ยของทุกหัวข้อหลัก (หน้าแรก) --------- */
 function updateCircle(){
   const circle=document.getElementById('progressCircle');
   const text=document.getElementById('circleText');
-  if (!circle || !text) return;
-
-  if (!db.topics.length){
-    circle.style.strokeDashoffset = 282.743;
-    text.textContent = '0%';
-    return;
-  }
-  let totalPercent = 0;
-  db.topics.forEach(t => totalPercent += compute(t).percent);
-  totalPercent = totalPercent / db.topics.length; // ค่าเฉลี่ย
-  const offset = 282.743 - (282.743 * (Math.max(0, Math.min(100, totalPercent))/100));
+  if(!circle) return;
+  if(!db.topics.length){ circle.style.strokeDashoffset=282.743; text.textContent='0%'; return; }
+  let avg= db.topics.reduce((s,t)=>s + computeMainPercent(t), 0) / db.topics.length;
+  const vis = Math.max(0, Math.min(100, avg));
+  const offset = 282.743 - (282.743 * (vis/100));
   circle.style.strokeDashoffset = offset;
-  text.textContent = Math.round(totalPercent) + '%';
+  text.textContent = Math.round(avg)+'%';
 }
 
-/* ---------- เรดาร์ (Canvas, no library) ---------- */
-function drawRadar(){
-  const cvs = document.getElementById('radarCanvas');
-  if (!cvs) return;
+/* ---------------- Radar (generic) with Canvas --------------- */
+function drawRadarOn(canvasId, labels, percents, subtitle){
+  const cvs = document.getElementById(canvasId);
+  if(!cvs) return;
   const ctx = cvs.getContext('2d');
-  const DPR = Math.max(1, window.devicePixelRatio || 1);
-  const cssW = cvs.clientWidth || 700, cssH = 320;
-  cvs.width = cssW * DPR; cvs.height = cssH * DPR; cvs.style.height = cssH + 'px';
+  const DPR = Math.max(1, window.devicePixelRatio||1);
+  const cssW = cvs.clientWidth || 700, cssH = cvs.height || 320;
+  cvs.width = cssW*DPR; cvs.height = cssH*DPR; cvs.style.height = cssH+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
 
-  const topics = (db.topics||[]).map(t=>{
-    const {percent} = compute(t);
-    return { name:t.name, percent: Math.max(0, Math.min(100, percent)) }; // แคปที่ 0–100 เพื่ออ่านง่าย
-  });
+  // cap 0..100 for radar visual
+  const N = labels.length;
+  const vals = percents.map(v=>Math.max(0,Math.min(100,v)));
 
   ctx.clearRect(0,0,cssW,cssH);
-  if (!topics.length){
-    ctx.fillStyle='#6b7280';
-    ctx.font='14px system-ui,-apple-system,Arial';
-    ctx.fillText('ยังไม่มีหัวข้อให้สรุป',16,24);
-    return;
+  if(!N){
+    ctx.fillStyle='#6b7280'; ctx.font='14px system-ui,-apple-system,Arial';
+    ctx.fillText('ยังไม่มีข้อมูล', 16, 24); return;
   }
 
-  const cx = cssW/2, cy = cssH/2 + 10;
-  const maxR = Math.min(cssW, cssH) * 0.36;
-  const N = topics.length;
-  const steps = 5;
+  const cx=cssW/2, cy=cssH/2 + 10, maxR=Math.min(cssW,cssH)*0.36, steps=5;
 
-  // วงแหวนพื้นหลัง
+  // rings
   ctx.lineWidth=1;
-  for (let s=1; s<=steps; s++){
-    const r = (s/steps)*maxR;
+  for(let s=1;s<=steps;s++){
+    const r=(s/steps)*maxR;
     ctx.beginPath();
-    for (let i=0;i<N;i++){
+    for(let i=0;i<N;i++){
       const a=(i/N)*Math.PI*2 - Math.PI/2;
       const x=cx + r*Math.cos(a), y=cy + r*Math.sin(a);
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
     }
     ctx.closePath();
-    ctx.strokeStyle='#e5e7eb';
-    ctx.stroke();
+    ctx.strokeStyle='#e5e7eb'; ctx.stroke();
   }
-  // เส้นรัศมี + ป้ายชื่อ
+
+  // spokes + labels
   ctx.font='12px system-ui,-apple-system,Arial';
   ctx.fillStyle='#0f1220';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  for (let i=0;i<N;i++){
+  for(let i=0;i<N;i++){
     const a=(i/N)*Math.PI*2 - Math.PI/2;
     const x=cx + maxR*Math.cos(a), y=cy + maxR*Math.sin(a);
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y);
     ctx.strokeStyle='#e5e7eb'; ctx.stroke();
     const lx=cx + (maxR+16)*Math.cos(a), ly=cy + (maxR+16)*Math.sin(a);
-    ctx.fillText(topics[i].name, lx, ly);
+    ctx.fillText(labels[i], lx, ly);
   }
-  // พื้นที่ค่าจริง
-  const pts = topics.map((t,i)=>{
-    const a=(i/N)*Math.PI*2 - Math.PI/2;
-    const r=(t.percent/100)*maxR;
+
+  // polygon
+  const pts=vals.map((v,i)=>{
+    const a=(i/N)*Math.PI*2 - Math.PI/2, r=(v/100)*maxR;
     return {x:cx + r*Math.cos(a), y:cy + r*Math.sin(a)};
   });
-  ctx.beginPath();
-  pts.forEach((p,i)=> i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
   ctx.closePath();
-  ctx.fillStyle='rgba(37,99,235,.18)';
-  ctx.strokeStyle='#2563eb';
-  ctx.lineWidth=2;
+  ctx.fillStyle='rgba(37,99,235,.18)'; ctx.strokeStyle='#2563eb'; ctx.lineWidth=2;
   ctx.fill(); ctx.stroke();
-  // จุดหัวมุม
-  ctx.fillStyle='#2563eb';
-  pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='#2563eb'; pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();});
 
-  // คำอธิบาย
-  ctx.fillStyle='#6b7280'; ctx.font='12px system-ui,-apple-system,Arial';
-  ctx.fillText('สเกล: 0–100% ของ Max points', 12, 16);
+  // subtitle
+  if(subtitle){ ctx.fillStyle='#6b7280'; ctx.font='12px system-ui,-apple-system,Arial'; ctx.fillText(subtitle,12,16); }
 }
 
-/* ---------- Views: Home ---------- */
-const homeView = document.getElementById('homeView');
-const topicView = document.getElementById('topicView');
-const topicsList = document.getElementById('topicsList');
+/* -------------------- Views / Refs -------------------------- */
+const homeView  = document.getElementById('homeView');
+const mainView  = document.getElementById('mainView');
+const subView   = document.getElementById('subView');
 
+const topicsList = document.getElementById('topicsList');
+const addTopicBtn = document.getElementById('addTopicBtn');
+const exportAllBtn= document.getElementById('exportAllBtn');
+
+const backHomeBtn = document.getElementById('backHomeBtn');
+const mainTitle   = document.getElementById('mainTitle');
+const mainSummary = document.getElementById('mainSummary');
+const subsList    = document.getElementById('subsList');
+const addSubBtn   = document.getElementById('addSubBtn');
+
+const backMainBtn = document.getElementById('backMainBtn');
+const subTitle    = document.getElementById('subTitle');
+const subLive     = document.getElementById('subLive');
+const subMaxPoints= document.getElementById('subMaxPoints');
+const subSegments = document.getElementById('subSegments');
+const subPointsPerStat = document.getElementById('subPointsPerStat');
+const subPreviewBar = document.getElementById('subPreviewBar');
+const subPreviewTicks= document.getElementById('subPreviewTicks');
+const subPreviewMeta = document.getElementById('subPreviewMeta');
+const subSegIndicator= document.getElementById('subSegIndicator');
+const questsList  = document.getElementById('questsList');
+const historyTableBody = document.querySelector('#historyTable tbody');
+const exportCsvBtn= document.getElementById('exportCsvBtn');
+const applyStageBtn = document.getElementById('applyStageBtn');
+const discardStageBtn= document.getElementById('discardStageBtn');
+const deleteSubBtn   = document.getElementById('deleteSubBtn');
+
+let currentMainId = null;
+let currentSubId  = null;
+let stage = { settings:null, deltaPoints:0, notes:[] };
+
+/* -------------------- Home rendering ------------------------ */
 function renderHome(){
-  homeView.style.display='grid'; topicView.style.display='none';
+  homeView.style.display='grid';
+  mainView.style.display='none';
+  subView.style.display='none';
   topicsList.innerHTML='';
 
-  if (!db.topics.length){
-    const empty=document.createElement('div');
-    empty.className='card';
-    empty.innerHTML='<div class="small">ยังไม่มีหัวข้อ กด “เพิ่มหัวข้อ” ด้านบน</div>';
-    topicsList.appendChild(empty);
+  if(!db.topics.length){
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML='<div class="small">ยังไม่มีหัวข้อหลัก กด “เพิ่มหัวข้อหลัก” ด้านบน</div>';
+    topicsList.appendChild(card);
     updateCircle();
-    drawRadar();
+    drawRadarOn('radarCanvas', [], [], '');
     return;
   }
 
   db.topics.forEach(t=>{
-    ensureTopic(t);
-    const { total, stats, percent } = compute(t);
-    const card=document.createElement('div');
-    card.className='card topic';
+    ensureMain(t);
+    const percent = computeMainPercent(t);
+    const card=document.createElement('div'); card.className='card topic';
     card.innerHTML = `
       <div class="topic-name">${t.name}</div>
       <div class="bar ${percent>100?'overflow':''}" style="flex:1">
         <span style="width:${Math.min(percent,200)}%"></span>
-        <div class="ticks"></div>
       </div>
-      <div class="small" style="width:140px;text-align:right">
-        ${formatNumber(total)}/${t.settings.maxPoints} pts • ${stats} stat
+      <div class="small" style="width:160px;text-align:right">
+        ค่าเฉลี่ย: ${formatNumber(percent)}% • ${t.subs.length} ย่อย
       </div>`;
-    const ticks=card.querySelector('.ticks');
-    const segs=Number(t.settings.segments||0);
-    for(let i=1;i<segs;i++){
-      const tk=document.createElement('div'); tk.className='tick';
-      tk.style.left=(i*100/segs)+'%'; ticks.appendChild(tk);
-    }
-    card.addEventListener('click',()=>openTopic(t.id));
+    card.addEventListener('click',()=>openMain(t.id));
     topicsList.appendChild(card);
   });
 
+  // วาดเรดาร์หน้าแรกจากหัวข้อหลัก
+  const labels = db.topics.map(t=>t.name);
+  const values = db.topics.map(t=>computeMainPercent(t));
+  drawRadarOn('radarCanvas', labels, values, 'สเกล: 0–100% (ค่าเฉลี่ยย่อยแต่ละหัวข้อหลัก)');
   updateCircle();
-  drawRadar();
 }
 
-/* ---------- Add / Export ---------- */
-document.getElementById('addTopicBtn').addEventListener('click',()=>{
-  const name=prompt('ตั้งชื่อหัวข้อใหม่ เช่น "Emotional Regulation"');
-  if(!name) return;
-  db.topics.push(ensureTopic({
-    id:uid(), name:name.trim(),
-    settings:{ maxPoints:100, segments:5, pointsPerStat:10 },
-    transactions:[],
-    quests:[
-      {id:uid(), title:'งานสำเร็จเล็ก', points:5},
-      {id:uid(), title:'งานสำเร็จใหญ่', points:10},
-    ]
-  }));
-  saveDB(db); renderHome();
-});
-document.getElementById('exportAllBtn').addEventListener('click',()=>{
-  download('progress_backup.json', JSON.stringify(db,null,2));
-});
+/* -------------------- Main Topic page ----------------------- */
+function openMain(id){
+  currentMainId = id; currentSubId = null;
+  const main = db.topics.find(t=>t.id===id); ensureMain(main);
 
-/* ---------- Topic detail ---------- */
-const backBtn=document.getElementById('backBtn');
-const topicTitle=document.getElementById('topicTitle');
-const liveStats=document.getElementById('liveStats');
-const inpMaxPoints=document.getElementById('inpMaxPoints');
-const inpSegments=document.getElementById('inpSegments');
-const inpPointsPerStat=document.getElementById('inpPointsPerStat');
-const previewBar=document.getElementById('previewBar');
-const previewTicks=document.getElementById('previewTicks');
-const previewMeta=document.getElementById('previewMeta');
-const segIndicator=document.getElementById('segIndicator');
-const questsList=document.getElementById('questsList');
-const historyTableBody=document.querySelector('#historyTable tbody');
+  homeView.style.display='none';
+  mainView.style.display='grid';
+  subView.style.display='none';
 
-backBtn.addEventListener('click',()=>{ currentTopicId=null; renderHome(); });
+  mainTitle.textContent = main.name;
+  const avg = computeMainPercent(main);
+  mainSummary.textContent = `ค่าเฉลี่ยย่อยทั้งหมด: ${formatNumber(avg)}% • ${main.subs.length} ย่อย`;
 
-function openTopic(id){
-  currentTopicId=id;
-  homeView.style.display='none'; topicView.style.display='grid';
-  stage = { settings:null, deltaPoints:0, notes:[] };
-  const t=ensureTopic(findTopic(id));
-
-  topicTitle.textContent=t.name;
-  inpMaxPoints.value=t.settings.maxPoints;
-  inpSegments.value=t.settings.segments;
-  inpPointsPerStat.value=t.settings.pointsPerStat;
-
-  [inpMaxPoints,inpSegments,inpPointsPerStat].forEach(inp=>{
-    inp.oninput = ()=>{
-      stage.settings = {
-        maxPoints:Number(inpMaxPoints.value),
-        segments:Number(inpSegments.value),
-        pointsPerStat:Number(inpPointsPerStat.value)
-      };
-      renderPreview();
-    };
+  // รายการย่อย
+  subsList.innerHTML='';
+  if(!main.subs.length){
+    const empty=document.createElement('div'); empty.className='small';
+    empty.textContent='ยังไม่มีหัวข้อย่อย'; subsList.appendChild(empty);
+  }
+  main.subs.forEach(sub=>{
+    ensureSub(sub);
+    const {percent} = computeSub(sub);
+    const el=document.createElement('div'); el.className='card topic';
+    el.innerHTML=`
+      <div class="topic-name">${sub.name}</div>
+      <div class="bar ${percent>100?'overflow':''}" style="flex:1">
+        <span style="width:${Math.min(percent,200)}%"></span>
+      </div>
+      <div class="small" style="width:160px;text-align:right">${formatNumber(percent)}%</div>`;
+    el.addEventListener('click',()=>openSub(sub.id));
+    subsList.appendChild(el);
   });
 
-  renderPreview();
-  renderQuests();
-  renderHistory();
+  // เรดาร์ของย่อย
+  const labels = main.subs.map(s=>s.name);
+  const values = main.subs.map(s=>computeSub(s).percent);
+  drawRadarOn('topicRadarCanvas', labels, values, 'สเกล: 0–100% ของ Max points ของแต่ละย่อย');
 }
 
-function renderPreview(){
-  const t=ensureTopic(findTopic(currentTopicId));
-  const s=stage.settings || t.settings;
-  const base=compute(t);
+backHomeBtn.addEventListener('click', ()=>{ currentMainId=null; renderHome(); });
+addSubBtn.addEventListener('click', ()=>{
+  const main = db.topics.find(t=>t.id===currentMainId); if(!main) return;
+  const name = prompt('ชื่อหัวข้อย่อย (เช่น ER, EF)');
+  if(!name) return;
+  main.subs.push(ensureSub({
+    id:uid(), name:name.trim(),
+    settings:{maxPoints:100,segments:5,pointsPerStat:10},
+    transactions:[], quests:[
+      {id:uid(), title:'งานสำเร็จเล็ก', points:5},
+      {id:uid(), title:'งานสำเร็จใหญ่', points:10}
+    ]
+  }));
+  saveDB(db); openMain(currentMainId);
+});
+
+/* -------------------- Sub Topic (quests) -------------------- */
+function openSub(subId){
+  currentSubId = subId;
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===subId); ensureSub(sub);
+
+  homeView.style.display='none';
+  mainView.style.display='none';
+  subView.style.display='grid';
+
+  subTitle.textContent = `${main.name} › ${sub.name}`;
+  subMaxPoints.value   = sub.settings.maxPoints;
+  subSegments.value    = sub.settings.segments;
+  subPointsPerStat.value = sub.settings.pointsPerStat;
+
+  stage = { settings:null, deltaPoints:0, notes:[] };
+  ['input','change'].forEach(evt=>{
+    subMaxPoints.addEventListener(evt, stageSettings);
+    subSegments.addEventListener(evt, stageSettings);
+    subPointsPerStat.addEventListener(evt, stageSettings);
+  });
+  function stageSettings(){
+    stage.settings = {
+      maxPoints:Number(subMaxPoints.value),
+      segments:Number(subSegments.value),
+      pointsPerStat:Number(subPointsPerStat.value)
+    };
+    renderSubPreview();
+  }
+
+  renderSubPreview();
+  renderQuests();
+  renderHistory();
+  subLive.textContent = `ค่า ณ ปัจจุบัน: ${formatNumber(computeSub(sub).percent)}%`;
+}
+
+backMainBtn.addEventListener('click', ()=>{ openMain(currentMainId); });
+
+function renderSubPreview(){
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===currentSubId); ensureSub(sub);
+
+  const s = stage.settings || sub.settings;
+  const base = computeSub(sub);
   const totalWithStage = base.total + stage.deltaPoints;
   const percent = s.maxPoints ? (totalWithStage/s.maxPoints)*100 : 0;
 
-  previewBar.className = 'bar' + (percent>100 ? ' overflow':'' );
-  previewBar.querySelector('span').style.width = Math.min(percent,200)+'%';
+  subPreviewBar.className='bar' + (percent>100?' overflow':'');
+  subPreviewBar.querySelector('span').style.width=Math.min(percent,200)+'%';
 
   // ticks
-  previewTicks.innerHTML='';
+  subPreviewTicks.innerHTML='';
   for(let i=1;i<Number(s.segments||0);i++){
     const tk=document.createElement('div'); tk.className='tick';
     tk.style.left=(i*100/Number(s.segments))+'%';
-    previewTicks.appendChild(tk);
+    subPreviewTicks.appendChild(tk);
   }
 
-  // segment indicator (แสดงจำนวน stat)
-  segIndicator.innerHTML='';
-  const stats = Math.floor(totalWithStage / Number(s.pointsPerStat||10));
+  // seg indicator (จำนวน stat)
+  subSegIndicator.innerHTML='';
+  const stats = Math.floor(totalWithStage/Number(s.settings?.pointsPerStat || s.pointsPerStat || 10));
   for(let i=0;i<Number(s.segments||0);i++){
     const seg=document.createElement('div');
-    seg.className='seg' + (i<stats ? ' filled' : '');
-    segIndicator.appendChild(seg);
+    seg.className='seg' + (i<stats?' filled':'');
+    subSegIndicator.appendChild(seg);
   }
 
-  liveStats.textContent = `รวม ${formatNumber(base.total)} pts • ${base.stats} stat`;
-  previewMeta.textContent = `หลังบันทึก: ${formatNumber(totalWithStage)} pts (${formatNumber(percent)}%) • ${stats} stat • เปลี่ยนแปลงค้างไว้ ${stage.deltaPoints>=0?'+':''}${stage.deltaPoints} pts`;
+  subPreviewMeta.textContent = `หลังบันทึก: ${formatNumber(totalWithStage)} pts (${formatNumber(percent)}%) • เปลี่ยนแปลงค้างไว้ ${stage.deltaPoints>=0?'+':''}${stage.deltaPoints} pts`;
 }
 
 function renderQuests(){
-  const t=ensureTopic(findTopic(currentTopicId));
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===currentSubId); ensureSub(sub);
+
   questsList.innerHTML='';
-  if (!t.quests.length){
+  if(!sub.quests.length){
     const empty=document.createElement('div'); empty.className='small';
     empty.textContent='ยังไม่มีเควส'; questsList.appendChild(empty);
   }
-  t.quests.forEach(q=>{
-    const row=document.createElement('div');
-    row.className='row'; row.style.alignItems='center';
+  sub.quests.forEach(q=>{
+    const row=document.createElement('div'); row.className='row'; row.style.alignItems='center';
     row.innerHTML=`
       <div style="flex:1">
         <div style="font-weight:600">${q.title}</div>
@@ -461,83 +542,92 @@ function renderQuests(){
         <button class="btn ghost" title="ลบ">ลบ</button>
       </div>`;
     const [btnGreen,btnRed,btnEdit,btnDel]=row.querySelectorAll('button');
-    btnGreen.onclick = ()=>{ stage.deltaPoints += Number(q.points); stage.notes.push(`✔ ${q.title} +${q.points}`); renderPreview(); };
-    btnRed.onclick   = ()=>{ stage.deltaPoints -= Number(q.points); stage.notes.push(`✖ ${q.title} -${q.points}`); renderPreview(); };
-    btnEdit.onclick  = ()=>{
-      const title = prompt('แก้ชื่อเควส', q.title); if (title===null) return;
-      let pts = prompt('แก้จำนวนคะแนน (+/- ได้)', q.points); if (pts===null) return;
-      pts = Number(pts); if (!Number.isFinite(pts)) return alert('กรุณาใส่ตัวเลข');
-      q.title = title.trim() || q.title; q.points = pts;
-      saveDB(db); renderQuests();
+    btnGreen.onclick=()=>{ stage.deltaPoints+=Number(q.points); stage.notes.push(`✔ ${q.title} +${q.points}`); renderSubPreview(); };
+    btnRed.onclick  =()=>{ stage.deltaPoints-=Number(q.points); stage.notes.push(`✖ ${q.title} -${q.points}`); renderSubPreview(); };
+    btnEdit.onclick =()=>{
+      const title=prompt('แก้ชื่อเควส', q.title); if(title===null) return;
+      let pts=prompt('แก้จำนวนคะแนน (+/- ได้)', q.points); if(pts===null) return;
+      pts=Number(pts); if(!Number.isFinite(pts)) return alert('กรุณาใส่ตัวเลข');
+      q.title=(title||'').trim()||q.title; q.points=pts; saveDB(db); renderQuests();
     };
-    btnDel.onclick   = ()=>{
-      if (!confirm('ลบเควสนี้?')) return;
-      t.quests = t.quests.filter(x=>x.id!==q.id);
-      saveDB(db); renderQuests();
+    btnDel.onclick =()=>{
+      if(!confirm('ลบเควสนี้?')) return;
+      sub.quests=sub.quests.filter(x=>x.id!==q.id); saveDB(db); renderQuests();
     };
     questsList.appendChild(row);
   });
 }
 
-document.getElementById('addQuestBtn').addEventListener('click',()=>{
-  const t=ensureTopic(findTopic(currentTopicId));
-  const title=prompt('ชื่อเควส'); if(!title) return;
-  let pts = prompt('คะแนนของเควส (เช่น 5 หรือ 10; ใส่ค่าติดลบได้)'); if (pts===null) return;
-  pts = Number(pts); if (!Number.isFinite(pts)) return alert('กรุณาใส่ตัวเลข');
-  t.quests.push({id:uid(), title:title.trim(), points:pts});
-  saveDB(db); renderQuests();
-});
-
-document.getElementById('applyStageBtn').addEventListener('click',()=>{
-  const t=ensureTopic(findTopic(currentTopicId));
-  if (stage.settings){
-    t.settings = {...t.settings, ...stage.settings};
-  }
-  if (stage.deltaPoints !== 0){
-    t.transactions.push({
-      time: nowISO(),
-      note: stage.notes.join(' | ') || 'ปรับแต้ม',
-      delta: stage.deltaPoints
-    });
+applyStageBtn.addEventListener('click', ()=>{
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===currentSubId); ensureSub(sub);
+  if(stage.settings){ sub.settings = {...sub.settings, ...stage.settings}; }
+  if(stage.deltaPoints!==0){
+    sub.transactions.push({time:nowISO(), note:stage.notes.join(' | ')||'ปรับแต้ม', delta:stage.deltaPoints});
   }
   saveDB(db);
-  stage = { settings:null, deltaPoints:0, notes:[] };
-  renderPreview(); renderHistory();
-  // อัปเดตรายงานบนหน้าแรกด้วย
-  updateCircle(); drawRadar();
+  stage={settings:null, deltaPoints:0, notes:[]};
+  renderSubPreview(); renderHistory();
+  // อัปเดตหน้า main เพื่อให้ค่าเฉลี่ย/เรดาร์เปลี่ยน
+  openMain(currentMainId);
   alert('บันทึกแล้ว');
 });
-
-document.getElementById('discardStageBtn').addEventListener('click',()=>{
-  stage = { settings:null, deltaPoints:0, notes:[] };
-  const t=ensureTopic(findTopic(currentTopicId));
-  inpMaxPoints.value=t.settings.maxPoints;
-  inpSegments.value=t.settings.segments;
-  inpPointsPerStat.value=t.settings.pointsPerStat;
-  renderPreview();
+discardStageBtn.addEventListener('click', ()=>{
+  stage={settings:null, deltaPoints:0, notes:[]};
+  renderSubPreview();
 });
-
-document.getElementById('deleteTopicBtn').addEventListener('click',()=>{
-  if (!confirm('ลบหัวข้อนี้และข้อมูลทั้งหมด?')) return;
-  db.topics = db.topics.filter(t=>t.id!==currentTopicId);
-  saveDB(db); currentTopicId=null; renderHome();
+deleteSubBtn.addEventListener('click', ()=>{
+  if(!confirm('ลบหัวข้อย่อยนี้และข้อมูลทั้งหมด?')) return;
+  const main = db.topics.find(t=>t.id===currentMainId);
+  main.subs = main.subs.filter(s=>s.id!==currentSubId);
+  saveDB(db); openMain(currentMainId);
 });
 
 function renderHistory(){
-  const t=ensureTopic(findTopic(currentTopicId));
-  historyTableBody.innerHTML='';
-  const rows=(t.transactions||[]).slice().reverse();
-  for (const row of rows){
-    const tr=document.createElement('tr');
-    const date=new Date(row.time);
-    tr.innerHTML = `<td>${date.toLocaleString()}</td><td>${row.note||''}</td><td>${row.delta>0?'+':''}${row.delta}</td>`;
-    historyTableBody.appendChild(tr);
-  }
-}
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===currentSubId); ensureSub(sub);
 
-/* ---------- Init ---------- */
-renderHome();
-window.addEventListener('resize', ()=>{ drawRadar(); }); // ให้เรดาร์คมเวลาเปลี่ยนขนาด
+  historyTableBody.innerHTML='';
+  (sub.transactions||[]).slice().reverse().forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${new Date(r.time).toLocaleString()}</td><td>${r.note||''}</td><td>${r.delta>0?'+':''}${r.delta}</td>`;
+    historyTableBody.appendChild(tr);
+  });
+}
+exportCsvBtn.addEventListener('click', ()=>{
+  const main = db.topics.find(t=>t.id===currentMainId);
+  const sub  = main.subs.find(s=>s.id===currentSubId);
+  const rows=[['time','note','delta'], ...(sub.transactions||[]).map(r=>[r.time, r.note||'', r.delta])];
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(`${main.name.replace(/\s+/g,'_')}__${sub.name.replace(/\s+/g,'_')}_history.csv`, csv);
+});
+
+/* -------------------- Add / Export global ------------------- */
+addTopicBtn.addEventListener('click', ()=>{
+  const name=prompt('ชื่อหัวข้อหลัก (เช่น EQ)'); if(!name) return;
+  db.topics.push(ensureMain({id:uid(), name:name.trim(), subs:[]}));
+  saveDB(db); renderHome();
+});
+exportAllBtn.addEventListener('click', ()=>{
+  download('progress_backup_nested.json', JSON.stringify(db,null,2));
+});
+
+/* -------------------- Init & resize handlers ---------------- */
+function redrawHomeRadar(){
+  const labels = db.topics.map(t=>t.name);
+  const values = db.topics.map(t=>computeMainPercent(t));
+  drawRadarOn('radarCanvas', labels, values, 'สเกล: 0–100% (ค่าเฉลี่ยย่อยแต่ละหัวข้อหลัก)');
+}
+window.addEventListener('resize', ()=>{ redrawHomeRadar(); if(currentMainId){ // main radar
+  const main=db.topics.find(t=>t.id===currentMainId)||{subs:[]};
+  drawRadarOn('topicRadarCanvas', main.subs.map(s=>s.name), main.subs.map(s=>computeSub(s).percent), 'สเกล: 0–100% ของ Max points ของแต่ละย่อย');
+}});
+
+(function start(){
+  db.topics.forEach(ensureMain);
+  renderHome();
+  redrawHomeRadar();
+})();
 </script>
 </body>
 </html>
