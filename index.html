@@ -21,6 +21,8 @@
   .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
   .btn.success{background:var(--accent-2);color:#fff}
   .btn.danger{background:var(--danger);color:#fff}
+  /* ปุ่มลบแบบเส้นบาง ใช้บนการ์ดหน้าแรก */
+  .btn.ghost-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
   .grid{display:grid;gap:12px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
@@ -82,7 +84,6 @@
     <div class="small" style="margin-bottom:6px">
       สรุปภาพรวมหน้าแรก: รูปหลายเหลี่ยมจะเปลี่ยนตามจำนวนหัวข้อหลัก (ค่าคือ % เฉลี่ยจากหัวข้อย่อยของแต่ละหัวข้อหลัก)
     </div>
-    <!-- ตั้งความสูงเริ่มต้นเตี้ย ๆ (140px) เพื่อไม่ให้กินที่ก่อน JS รัน) -->
     <canvas id="radarCanvas" height="140"></canvas>
   </div>
 
@@ -100,6 +101,8 @@
         <button class="btn ghost" id="backHomeBtn">← กลับหน้าแรก</button>
         <h2 id="mainTitle" style="margin:0"></h2>
         <span class="right small" id="mainSummary"></span>
+        <!-- ปุ่มลบหัวข้อหลักในหน้ารายละเอียด -->
+        <button class="btn danger" id="deleteMainBtn">ลบหัวข้อหลักนี้</button>
       </div>
     </div>
 
@@ -217,7 +220,6 @@ function drawRadarOn(canvasId, labels, percents, subtitle){
   const cvs=document.getElementById(canvasId); if(!cvs) return;
   const ctx=cvs.getContext('2d');
   const cssW=(cvs.offsetWidth||cvs.clientWidth||700);
-  // ถ้าไม่มีข้อมูล ให้สูง 140px, ถ้ามี ให้ 300px
   const cssH=labels.length?300:140;
   const DPR=Math.max(1,window.devicePixelRatio||1);
   cvs.width=cssW*DPR; cvs.height=cssH*DPR; cvs.style.height=cssH+'px';
@@ -233,7 +235,6 @@ function drawRadarOn(canvasId, labels, percents, subtitle){
   const N=labels.length, vals=percents.map(v=>Math.max(0,Math.min(100,v)));
   const cx=cssW/2, cy=cssH/2 + 6, maxR=Math.min(cssW,cssH)*0.36, steps=5;
 
-  // rings
   ctx.lineWidth=1;
   for(let s=1;s<=steps;s++){
     const r=(s/steps)*maxR; ctx.beginPath();
@@ -241,7 +242,6 @@ function drawRadarOn(canvasId, labels, percents, subtitle){
       i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
     ctx.closePath(); ctx.strokeStyle='#e5e7eb'; ctx.stroke();
   }
-  // spokes + labels
   ctx.font='12px system-ui,-apple-system,Arial'; ctx.fillStyle='#0f1220';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   for(let i=0;i<N;i++){
@@ -249,8 +249,7 @@ function drawRadarOn(canvasId, labels, percents, subtitle){
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.strokeStyle='#e5e7eb'; ctx.stroke();
     const lx=cx+(maxR+16)*Math.cos(a), ly=cy+(maxR+16)*Math.sin(a); ctx.fillText(labels[i], lx, ly);
   }
-  // polygon
-  const pts=vals.map((v,i)=>{ const a=(i/N)*Math.PI*2 - Math.PI/2, r=(v/100)*maxR; return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}; });
+  const pts=vals.map((v,i)=>{ const a=(i/N)*Math.PI*2 - Math.PI/2, r=(v/100)*maxR; return {x:cx+r*Math.cos(a), y=cy+r*Math.sin(a)}; });
   ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath();
   ctx.fillStyle='rgba(37,99,235,.18)'; ctx.strokeStyle='#2563eb'; ctx.lineWidth=2; ctx.fill(); ctx.stroke();
   ctx.fillStyle='#2563eb'; pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();});
@@ -268,6 +267,7 @@ const mainTitle=document.getElementById('mainTitle');
 const mainSummary=document.getElementById('mainSummary');
 const subsList=document.getElementById('subsList');
 const addSubBtn=document.getElementById('addSubBtn');
+const deleteMainBtn=document.getElementById('deleteMainBtn');
 
 const backMainBtn=document.getElementById('backMainBtn');
 const subTitle=document.getElementById('subTitle');
@@ -304,8 +304,18 @@ function renderHome(){
       card.innerHTML=`
         <div class="topic-name">${t.name}</div>
         <div class="bar ${percent>100?'overflow':''}" style="flex:1"><span style="width:${Math.min(percent,200)}%"></span></div>
-        <div class="small" style="width:160px;text-align:right">ค่าเฉลี่ย: ${formatNumber(percent)}% • ${t.subs.length} ย่อย</div>`;
+        <div class="small" style="width:160px;text-align:right">ค่าเฉลี่ย: ${formatNumber(percent)}% • ${t.subs.length} ย่อย</div>
+        <button class="btn ghost-danger del-main" title="ลบหัวข้อหลัก">ลบ</button>`;
+      // เปิดหน้า main เมื่อคลิกการ์ด
       card.addEventListener('click',()=>openMain(t.id));
+      // ปุ่มลบบนการ์ด (กันส่งต่อ event)
+      card.querySelector('.del-main').addEventListener('click',(e)=>{
+        e.stopPropagation();
+        if(!confirm(`ลบ "${t.name}" พร้อมหัวข้อย่อยและประวัติทั้งหมด?`)) return;
+        db.topics = db.topics.filter(x=>x.id!==t.id);
+        saveDB(db);
+        renderHome();
+      });
       topicsList.appendChild(card);
     });
   }
@@ -347,6 +357,19 @@ addSubBtn.addEventListener('click', ()=>{
     {id:uid(),title:'งานสำเร็จเล็ก',points:5},{id:uid(),title:'งานสำเร็จใหญ่',points:10}
   ]}));
   saveDB(db); openMain(currentMainId);
+});
+
+/* ปุ่มลบหัวข้อหลักในหน้ารายละเอียด */
+deleteMainBtn.addEventListener('click',()=>{
+  if(!currentMainId) return;
+  const i=db.topics.findIndex(t=>t.id===currentMainId);
+  if(i<0) return;
+  const name=db.topics[i].name || 'หัวข้อหลักนี้';
+  if(!confirm(`ลบ "${name}" พร้อมหัวข้อย่อยและประวัติทั้งหมด?`)) return;
+  db.topics.splice(i,1);
+  saveDB(db);
+  currentMainId=null;
+  renderHome();
 });
 
 /* ---- Sub page ---- */
@@ -447,7 +470,7 @@ document.getElementById('addTopicBtn').addEventListener('click',()=>{
 });
 document.getElementById('exportAllBtn').addEventListener('click',()=>download('progress_backup_nested.json', JSON.stringify(db,null,2)));
 
-/* ===== Init (หลัง DOM โหลด) ===== */
+/* ===== Init ===== */
 function start(){
   db.topics.forEach(ensureMain);
   renderHome();
