@@ -12,14 +12,15 @@
   .container{max-width:980px;margin:0 auto;padding:16px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
   h1{font-size:20px;margin:0}
-  .btn{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:var(--accent);color:#fff}
+  .btn{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:var(--accent);color:#fff;transition:.15s}
+  .btn:hover{filter:brightness(.95)}
   .btn.secondary{background:#e5e7eb;color:#111}
   .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
   .btn.success{background:var(--accent-2);color:#fff}
   .btn.danger{background:var(--danger);color:#fff}
   .btn.ghost-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
   .grid{display:grid;gap:12px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   input[type="text"],input[type="number"],textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff}
   .topic{display:flex;gap:12px;align-items:center}
@@ -47,6 +48,10 @@
   .circle-text{position:absolute;font-size:18px;font-weight:700}
 
   #radarCard canvas,#topicRadarCard canvas{display:block;width:100%;max-width:700px;margin:auto;background:#fff;border:1px solid var(--border);border-radius:12px}
+
+  /* ฟอร์มเพิ่มเควส */
+  .quest-form{display:flex;gap:8px;align-items:end;background:#f9fafb;border:1px dashed var(--border);padding:10px;border-radius:10px;margin-top:10px}
+  .quest-form .btn{padding:8px 12px}
 </style>
 </head>
 <body>
@@ -129,6 +134,23 @@
             <h3 style="margin:0">Quests</h3>
             <button class="btn secondary right" id="addQuestBtn">เพิ่ม Quest</button>
           </div>
+
+          <!-- ฟอร์มเพิ่มเควสแบบอินไลน์ (จะถูกโชว์/ซ่อนด้วย JS) -->
+          <div id="questForm" class="quest-form" style="display:none">
+            <div style="flex:2">
+              <label>ชื่อเควส</label>
+              <input type="text" id="questName" placeholder="เช่น ทำสมาธิ 10 นาที">
+            </div>
+            <div style="flex:1">
+              <label>คะแนนต่อครั้ง (+/- ได้)</label>
+              <input type="number" id="questPoints" step="1" value="5">
+            </div>
+            <div class="row" style="gap:6px">
+              <button class="btn success" id="questSaveBtn">เพิ่ม</button>
+              <button class="btn ghost" id="questCancelBtn">ยกเลิก</button>
+            </div>
+          </div>
+
           <div id="questsList" class="grid" style="margin-top:8px"></div>
           <div class="hr"></div>
           <div class="row">
@@ -287,6 +309,14 @@ var applyStageBtn=document.getElementById('applyStageBtn');
 var discardStageBtn=document.getElementById('discardStageBtn');
 var deleteSubBtn=document.getElementById('deleteSubBtn');
 
+/* ฟอร์มเพิ่มเควส */
+var addQuestBtn=document.getElementById('addQuestBtn');
+var questForm=document.getElementById('questForm');
+var questName=document.getElementById('questName');
+var questPoints=document.getElementById('questPoints');
+var questSaveBtn=document.getElementById('questSaveBtn');
+var questCancelBtn=document.getElementById('questCancelBtn');
+
 var currentMainId=null, currentSubId=null;
 var stage={settings:null,deltaPoints:0,notes:[]};
 
@@ -379,6 +409,8 @@ function openSub(subId){
   [subMaxPoints,subSegments,subPointsPerStat].forEach(function(inp){
     inp.oninput=function(){ stage.settings={maxPoints:+subMaxPoints.value,segments:+subSegments.value,pointsPerStat:+subPointsPerStat.value}; renderSubPreview(); };
   });
+  // รีเซ็ตฟอร์มเควส
+  questForm.style.display='none'; questName.value=''; questPoints.value='5';
   renderSubPreview(); renderQuests(); renderHistory();
   subLive.textContent='ค่า ณ ปัจจุบัน: '+formatNumber(computeSub(sub).percent)+'%';
 }
@@ -406,6 +438,7 @@ function renderSubPreview(){
   subPreviewMeta.textContent='หลังบันทึก: '+formatNumber(totalWithStage)+' pts ('+formatNumber(percent)+'%) • เปลี่ยนแปลงค้างไว้ '+(stage.deltaPoints>=0?'+':'')+stage.deltaPoints+' pts';
 }
 
+/* ----- Quests list + Add form ----- */
 function renderQuests(){
   var main=db.topics.find(function(t){return t.id===currentMainId});
   var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
@@ -436,6 +469,28 @@ function renderQuests(){
     questsList.appendChild(row);
   });
 }
+
+/* ปุ่ม “เพิ่ม Quest” -> toggle ฟอร์ม */
+addQuestBtn.addEventListener('click',function(){
+  if(questForm.style.display==='none'){ questForm.style.display='flex'; questName.focus(); }
+  else questForm.style.display='none';
+});
+questCancelBtn.addEventListener('click',function(){
+  questName.value=''; questPoints.value='5'; questForm.style.display='none';
+});
+questSaveBtn.addEventListener('click',function(){
+  var name=(questName.value||'').trim();
+  var pts=Number(questPoints.value);
+  if(!name) return alert('กรุณาใส่ชื่อเควส');
+  if(!isFinite(pts)) return alert('กรุณาใส่ตัวเลขคะแนน');
+  var main=db.topics.find(function(t){return t.id===currentMainId});
+  var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
+  sub.quests.push({id:uid(), title:name, points:pts});
+  saveDB(db);
+  questName.value=''; questPoints.value='5'; questForm.style.display='none';
+  renderQuests();
+});
+
 applyStageBtn.addEventListener('click',function(){
   var main=db.topics.find(function(t){return t.id===currentMainId});
   var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
