@@ -32,8 +32,8 @@
   .small{font-size:12px;color:var(--muted)}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .spacer{height:8px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left;font-size:13px}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;font-size:13px;vertical-align:top}
   th{color:var(--muted);font-weight:600}
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:#374151;background:#f9fafb}
   .seg-indicator{display:flex;gap:4px}
@@ -52,6 +52,14 @@
   /* ฟอร์มเพิ่มเควส */
   .quest-form{display:flex;gap:8px;align-items:end;background:#f9fafb;border:1px dashed var(--border);padding:10px;border-radius:10px;margin-top:10px}
   .quest-form .btn{padding:8px 12px}
+
+  /* รายการค้างบันทึก */
+  #pendingList{background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px}
+  #pendingList .item{display:flex;gap:8px;margin:4px 0}
+  #pendingList .delta{min-width:64px;font-weight:700}
+
+  /* ประวัติอ่านง่าย: คอลัมน์หมายเหตุห่อบรรทัด */
+  .note-cell{white-space:pre-wrap;word-break:break-word}
 </style>
 </head>
 <body>
@@ -135,7 +143,7 @@
             <button class="btn secondary right" id="addQuestBtn">เพิ่ม Quest</button>
           </div>
 
-          <!-- ฟอร์มเพิ่มเควสแบบอินไลน์ (จะถูกโชว์/ซ่อนด้วย JS) -->
+          <!-- ฟอร์มเพิ่มเควส -->
           <div id="questForm" class="quest-form" style="display:none">
             <div style="flex:2">
               <label>ชื่อเควส</label>
@@ -152,6 +160,9 @@
           </div>
 
           <div id="questsList" class="grid" style="margin-top:8px"></div>
+
+          <div id="pendingList" style="display:none"></div>
+
           <div class="hr"></div>
           <div class="row">
             <button class="btn success" id="applyStageBtn">Save (บันทึกการเปลี่ยนแปลง)</button>
@@ -164,7 +175,17 @@
             <h3 style="margin:0">ประวัติ</h3>
             <button class="btn secondary right" id="exportCsvBtn">ส่งออก CSV</button>
           </div>
-          <table id="historyTable"><thead><tr><th>วัน/เวลา</th><th>รายละเอียด</th><th>Δ points</th></tr></thead><tbody></tbody></table>
+          <table id="historyTable">
+            <colgroup>
+              <col style="width:170px">
+              <col style="width:auto">
+              <col style="width:110px">
+            </colgroup>
+            <thead>
+              <tr><th>วัน/เวลา</th><th>รายละเอียด</th><th>Δ points</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
 
         <div class="card"><button class="btn danger" id="deleteSubBtn">ลบหัวข้อย่อยนี้</button></div>
@@ -303,6 +324,7 @@ var subPreviewTicks=document.getElementById('subPreviewTicks');
 var subPreviewMeta=document.getElementById('subPreviewMeta');
 var subSegIndicator=document.getElementById('subSegIndicator');
 var questsList=document.getElementById('questsList');
+var pendingList=document.getElementById('pendingList');
 var historyTableBody=document.querySelector('#historyTable tbody');
 var exportCsvBtn=document.getElementById('exportCsvBtn');
 var applyStageBtn=document.getElementById('applyStageBtn');
@@ -318,7 +340,10 @@ var questSaveBtn=document.getElementById('questSaveBtn');
 var questCancelBtn=document.getElementById('questCancelBtn');
 
 var currentMainId=null, currentSubId=null;
-var stage={settings:null,deltaPoints:0,notes:[]};
+/* เปลี่ยน stage ให้เก็บ “events” ทีละเควส */
+var stage={settings:null,events:[]}; // {note, delta}
+
+function stageTotalDelta(){ return stage.events.reduce(function(s,e){return s+e.delta},0); }
 
 function renderHome(){
   homeView.style.display='grid'; mainView.style.display='none'; subView.style.display='none';
@@ -405,13 +430,12 @@ function openSub(subId){
   subMaxPoints.value=sub.settings.maxPoints;
   subSegments.value=sub.settings.segments;
   subPointsPerStat.value=sub.settings.pointsPerStat;
-  stage={settings:null,deltaPoints:0,notes:[]};
+  stage={settings:null,events:[]};
   [subMaxPoints,subSegments,subPointsPerStat].forEach(function(inp){
     inp.oninput=function(){ stage.settings={maxPoints:+subMaxPoints.value,segments:+subSegments.value,pointsPerStat:+subPointsPerStat.value}; renderSubPreview(); };
   });
-  // รีเซ็ตฟอร์มเควส
   questForm.style.display='none'; questName.value=''; questPoints.value='5';
-  renderSubPreview(); renderQuests(); renderHistory();
+  renderSubPreview(); renderQuests(); renderHistory(); renderPending();
   subLive.textContent='ค่า ณ ปัจจุบัน: '+formatNumber(computeSub(sub).percent)+'%';
 }
 backMainBtn.addEventListener('click',function(){ openMain(currentMainId); });
@@ -421,7 +445,7 @@ function renderSubPreview(){
   var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
   var s=stage.settings||sub.settings;
   var base=computeSub(sub);
-  var totalWithStage=base.total+stage.deltaPoints;
+  var totalWithStage=base.total+stageTotalDelta();
   var percent=s.maxPoints?(totalWithStage/s.maxPoints)*100:0;
   subPreviewBar.className='bar'+(percent>100?' overflow':'');
   subPreviewBar.querySelector('span').style.width=Math.min(percent,200)+'%';
@@ -435,7 +459,25 @@ function renderSubPreview(){
   for(i=0;i<Number(s.segments||0);i++){
     var seg=document.createElement('div'); seg.className='seg'+(i<stats?' filled':''); subSegIndicator.appendChild(seg);
   }
-  subPreviewMeta.textContent='หลังบันทึก: '+formatNumber(totalWithStage)+' pts ('+formatNumber(percent)+'%) • เปลี่ยนแปลงค้างไว้ '+(stage.deltaPoints>=0?'+':'')+stage.deltaPoints+' pts';
+  subPreviewMeta.textContent='หลังบันทึก: '+formatNumber(totalWithStage)+' pts ('+formatNumber(percent)+'%) • รายการค้าง '+stage.events.length+' รายการ • รวม '+(stageTotalDelta()>=0?'+':'')+formatNumber(stageTotalDelta())+' pts';
+}
+
+/* รายการ “ค้างบันทึก” */
+function renderPending(){
+  if(!stage.events.length){ pendingList.style.display='none'; pendingList.innerHTML=''; return; }
+  pendingList.style.display='block';
+  var html='<div class="small" style="margin-bottom:6px">รายการค้างบันทึก</div>';
+  stage.events.forEach(function(ev,idx){
+    html+= '<div class="item"><div class="delta">'+(ev.delta>0?'+':'')+ev.delta+' pts</div><div style="flex:1">'+ev.note+'</div><button class="btn ghost" data-i="'+idx+'">ยกเลิก</button></div>';
+  });
+  pendingList.innerHTML=html;
+  pendingList.querySelectorAll('button').forEach(function(b){
+    b.onclick=function(){
+      var i=Number(b.getAttribute('data-i'));
+      stage.events.splice(i,1);
+      renderPending(); renderSubPreview();
+    };
+  });
 }
 
 /* ----- Quests list + Add form ----- */
@@ -457,8 +499,18 @@ function renderQuests(){
       '<button class="btn secondary" title="แก้ไข">แก้ไข</button>'+
       '<button class="btn ghost" title="ลบ">ลบ</button></div>';
     var btns=row.querySelectorAll('button');
-    btns[0].onclick=function(){ stage.deltaPoints+=Number(q.points); stage.notes.push('✔ '+q.title+' +'+q.points); renderSubPreview(); };
-    btns[1].onclick=function(){ stage.deltaPoints-=Number(q.points); stage.notes.push('✖ '+q.title+' -'+q.points); renderSubPreview(); };
+    btns[0].onclick=function(){
+      var note=prompt('ใส่หมายเหตุเพิ่มเติม (ไม่บังคับ):\nตัวอย่าง: ทำตามแผนได้ครบ 3 ขั้น'); if(note===null) return;
+      var full='✔ '+q.title+' (+'+q.points+')'+(note.trim()? ' — '+note.trim() : '');
+      stage.events.push({note:full, delta:+q.points});
+      renderSubPreview(); renderPending();
+    };
+    btns[1].onclick=function(){
+      var note=prompt('ใส่หมายเหตุ (ไม่บังคับ):\nตัวอย่าง: พลาดเพราะโทรศัพท์รบกวน'); if(note===null) return;
+      var full='✖ '+q.title+' (-'+q.points+')'+(note.trim()? ' — '+note.trim() : '');
+      stage.events.push({note:full, delta:-q.points});
+      renderSubPreview(); renderPending();
+    };
     btns[2].onclick=function(){
       var title=prompt('แก้ชื่อเควส',q.title); if(title===null) return;
       var pts=prompt('แก้จำนวนคะแนน (+/- ได้)',q.points); if(pts===null) return;
@@ -491,26 +543,39 @@ questSaveBtn.addEventListener('click',function(){
   renderQuests();
 });
 
+/* บันทึก / ยกเลิก */
 applyStageBtn.addEventListener('click',function(){
   var main=db.topics.find(function(t){return t.id===currentMainId});
   var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
   if(stage.settings) sub.settings=Object.assign({},sub.settings,stage.settings);
-  if(stage.deltaPoints!==0) sub.transactions.push({time:nowISO(),note:stage.notes.join(' | ')||'ปรับแต้ม',delta:stage.deltaPoints});
-  saveDB(db); stage={settings:null,deltaPoints:0,notes:[]}; renderSubPreview(); renderHistory(); openMain(currentMainId); alert('บันทึกแล้ว');
+  if(stage.events.length){
+    stage.events.forEach(function(ev){
+      sub.transactions.push({time:nowISO(),note:ev.note,delta:ev.delta});
+    });
+  }
+  saveDB(db);
+  stage={settings:null,events:[]};
+  renderSubPreview(); renderHistory(); renderPending(); openMain(currentMainId);
+  alert('บันทึกแล้ว');
 });
-discardStageBtn.addEventListener('click',function(){ stage={settings:null,deltaPoints:0,notes:[]}; renderSubPreview(); });
+discardStageBtn.addEventListener('click',function(){
+  stage={settings:null,events:[]}; renderSubPreview(); renderPending();
+});
 deleteSubBtn.addEventListener('click',function(){
   if(!confirm('ลบหัวข้อย่อยนี้และข้อมูลทั้งหมด?')) return;
   var main=db.topics.find(function(t){return t.id===currentMainId});
   main.subs=main.subs.filter(function(s){return s.id!==currentSubId}); saveDB(db); openMain(currentMainId);
 });
+
+/* ประวัติ */
 function renderHistory(){
   var main=db.topics.find(function(t){return t.id===currentMainId});
   var sub=main.subs.find(function(s){return s.id===currentSubId}); ensureSub(sub);
   historyTableBody.innerHTML='';
   (sub.transactions||[]).slice().reverse().forEach(function(r){
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+new Date(r.time).toLocaleString()+'</td><td>'+(r.note||'')+'</td><td>'+(r.delta>0?'+':'')+r.delta+'</td>';
+    var d=new Date(r.time);
+    tr.innerHTML='<td>'+d.toLocaleString()+'</td><td class="note-cell">'+(r.note||'')+'</td><td>'+(r.delta>0?'+':'')+r.delta+'</td>';
     historyTableBody.appendChild(tr);
   });
 }
